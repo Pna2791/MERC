@@ -1,5 +1,7 @@
 #include <Motor.h>
 #include <RelayArray.h>
+
+#include <DC_Servo.h>
 #include <Hi229.h>
 
 #include <PID_Control.h>
@@ -8,11 +10,16 @@
 #include "BluetoothSerial.h"
 BluetoothSerial SerialBT;
 
-
+const int maze_1_robot = 1;
+const int maze_2_robot = 2;
+const int maze_3_robot = 3;
+#define robot_type      maze_1_robot
 
 Motor motor_left = Motor(13, 15);   // dir, speed
 Motor motor_right = Motor(19, 22);
 Motor motor_hand = Motor(17, 16);
+DC_Servo hand_servo = DC_Servo();
+DC_Servo body_servo = DC_Servo();
 
 
 
@@ -20,14 +27,17 @@ PIDController forward_pid   = PIDController(20, 2, 1, 127);
 Chassis dual_wheel = Chassis(motor_left, motor_right, forward_pid);
 Relay_Array relay_array = Relay_Array(5, 18, 23);
 
-
 #define pump_left       0
 #define coil_left       1
+#define xilanh          2
+#define pump_front      3
+#define coil_front      4
+
 
 int wheel_speed = 0;
 int duration = 0;
 int angle = 0;
-
+int speed_combo = 100;
 
 int current_dir = 0;
 void setup() {
@@ -157,6 +167,135 @@ void combo_1(){
     motor_right.setSpeed(0);
     SerialBT.discoverClear();
 }
+//combo 2 function: take ball automatic
+void take_ball() {
+    if(robot_type == maze_1_robot) {
+        //bật hút
+        
+        //hạ tay 
+        servo_hand.goto_by_mm(int );
+        //nâng tay
+        servo_hand.goto_by_mm(int );
+
+    } else if (robot_type == maze_2_robot) {
+        //bật hút
+
+        //hạ tay 
+        servo_hand.goto_by_mm(int );
+        //nâng tay
+        servo_hand.goto_by_mm(int );
+
+    } else if (robot_type == maze_3_robot) {
+        //bật hút
+
+        //hạ tay 
+        body_servo.goto_by_mm(int );
+        delay(1000);
+        //nâng tay
+        body_servo.goto_by_mm(int );
+
+    }
+}
+//combo 3 function: drop ball automatic
+void drop_ball() {
+    if(robot_type == maze_1_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm(int );
+        //act 2: lui
+        
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm(int );
+        //act 2: lui
+        dual_wheel.set_speed(-100);
+        dual_wheel.set_speed(0);
+        dual_wheel.set_speed(0);
+    } else if (robot_type == maze_3_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm(int );
+        //act 2: lui
+        
+    }
+}
+//combo 4 function: hút quân lương bán tự động 
+void suck_box() {
+    if(robot_type == maze_1_robot) {
+        //act 1: bật hút
+        relay_array.set_status(coil_left, 0);
+        relay_array.set_status(pump_left, 1);
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: bật hút
+        relay_array.set_status(coil_left, 0);
+        relay_array.set_status(pump_left, 1);
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    } else if (robot_type == maze_3_robot) {
+        //act 1: bật hút
+        relay_array.set_status(coil_left, 0);
+        relay_array.set_status(pump_left, 1);
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    }
+}
+
+//combo 5 function: kẹp cọc + thả cọc 
+void pile_clamp() {
+    if(robot_type == maze_1_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    } else if (robot_type == maze_3_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    }
+}
 
 void update_k_PID(String command){
     float value = command.substring(1).toFloat();
@@ -219,6 +358,12 @@ void processSerialCommand(String command) {
     if (command.startsWith("C")) {
         int value = command.substring(1).toInt();
         if(value == 1)  combo_1();
+        if(value == 2)  take_ball();
+        if(value == 3)  drop_ball();
+        if(value == 4)  suck_box();
+        if(value == 5)  pile_clamp();
+
+
     }
 
     if (command.startsWith("A")) {
@@ -230,6 +375,6 @@ void processSerialCommand(String command) {
     if (command.startsWith("R")) {
         test_rotate();
     }
-    
-
 }
+
+//COMBO Function
