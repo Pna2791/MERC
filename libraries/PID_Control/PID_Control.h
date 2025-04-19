@@ -2,6 +2,7 @@
 #define PID_CONTROL_H
 
 
+#define INTERVAL 40
 #define FREQ    25
 
 
@@ -78,10 +79,11 @@ private:
 
 class PIDController {
 public:
-    PIDController(float kp, float ki, float kd, float max_output) {
+    PIDController(float kp, float ki, float kd, float max_output, int skip_error=10) {
         this->kp = kp;
         this->ki = ki;
         this->kd = kd;
+        this->skip_error = skip_error;
         integral = 0;
         prevError = 0;
         outputMin = -max_output;
@@ -113,6 +115,11 @@ public:
 
     float compute(float setpoint, float measured) {
         float error = setpoint - measured;
+        mean_error = 0.6*mean_error + 0.4*abs(error);
+        if(mean_error < skip_error){
+            return 0;
+        }
+
         integral += error / FREQ; // dt = 1/FREQ
         integral = constrain(integral, outputMin/2/ki, outputMax/2/ki);
         float derivative = (error - prevError) * FREQ;
@@ -128,6 +135,8 @@ private:
     float integral;
     float prevError;
     float outputMin, outputMax;
+    int mean_error;
+    int skip_error;
 };
 
 

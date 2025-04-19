@@ -1,8 +1,19 @@
+#define SHOW_ENCODER
+
+#define ROBOT_NAME_1    "Maze1"
+// #define ROBOT_NAME_2    "Maze2"
+// #define ROBOT_NAME_3    "Maze3"
+
+
+#include <Encoder.h>
 #include <Motor.h>
+#include <DC_Servo.h>
 #include <RelayArray.h>
 #include <Hi229.h>
 
 #include <PID_Control.h>
+
+
 
 
 #include "BluetoothSerial.h"
@@ -10,15 +21,27 @@ BluetoothSerial SerialBT;
 
 
 
+#ifdef ROBOT_NAME_1             
+    #define wheel_step_per_mm 1
+#elif defined(ROBOT_NAME_2)     
+    #define wheel_step_per_mm 2.65
+#elif defined(ROBOT_NAME_2)     
+    #define wheel_step_per_mm 2.65
+#endif
 Motor motor_left = Motor(13, 15);   // dir, speed
 Motor motor_right = Motor(19, 22);
-Motor motor_hand = Motor(17, 16);
-
+Encoder wheel_encoder(34, 35);
 
 
 PIDController forward_pid   = PIDController(20, 2, 1, 127);
 Chassis dual_wheel = Chassis(motor_left, motor_right, forward_pid);
 Relay_Array relay_array = Relay_Array(5, 18, 23);
+
+Encoder hand_encoder(32, 33);
+Motor   hand_motor(17, 16);
+PIDController   hand_pid(10, 0, 0.3, 255, 5);  // P, I, D, max speed, skip error
+DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
+
 
 
 #define pump_left       0
@@ -31,17 +54,38 @@ int angle = 0;
 
 int current_dir = 0;
 void setup() {
+    hand_encoder.begin();
+    wheel_encoder.begin();
+
     Serial.begin(115200);
     Serial2.begin(115200, SERIAL_8N1, 12, 14);
     // Serial2.begin(115200, SERIAL_8N1, 14, 12);
     Serial1.begin(9600, SERIAL_8N1, 26, 25);
-
     SerialBT.begin("Maze2"); // Set the Bluetooth device name
 }
 void reset_IMU(){
     Serial2.println("AT+RST");
     delay(1000);
     Serial2.println("AT+RST");
+}
+
+void servo_run(){
+    Serial.println(wheel_encoder.getCount());
+}
+
+
+#define AUTO_FW_SPEED   127
+void auto_forward(int length=1200, int time_out=3000){
+    delay(1000);
+    long target_pos = wheel_encoder.getCount() + wheel_step_per_mm*length;
+    time_out += millis();
+
+    dual_wheel.set_speed(AUTO_FW_SPEED, AUTO_FW_SPEED, 15);
+    while(millis() < time_out && wheel_encoder.getCount() < target_pos){
+        dual_wheel.run();
+        delay(INTERVAL);
+    }
+    dual_wheel.stop();
 }
 
 void loop() {
@@ -71,12 +115,14 @@ void loop() {
             dual_wheel.keep_forward(received_dir, wheel_speed, SerialBT);
 
         dual_wheel.run();
-        next_update = millis() + 45;
+        next_update = millis() + INTERVAL;
+        servo_run();
         // Serial.println(current_dir);
     }else{
-        if(millis() > next_update){
+        if(millis() > next_update+5){
+            servo_run();
             dual_wheel.run();
-            next_update += 40;
+            next_update += INTERVAL;
         }
     }
 
@@ -172,6 +218,11 @@ void update_k_PID(String command){
     }
 }
 
+void process_combo(int value){
+    if(value == 1)  combo_1();
+    if(value == 23)  auto_forward(1200);
+}
+
 #define body_speed 255
 #define hand_speed 255
 void processSerialCommand(String command) {
@@ -189,11 +240,11 @@ void processSerialCommand(String command) {
 
     if (command.startsWith("H")) {
         char ch = command.charAt(1);
-        if(ch == '0')   motor_hand.setSpeed(0);
-        if(ch == '+')   motor_hand.setSpeed(hand_speed/4);
-        if(ch == '-')   motor_hand.setSpeed(-hand_speed/4);
-        if(ch == '*')   motor_hand.setSpeed(hand_speed);
-        if(ch == '/')   motor_hand.setSpeed(-hand_speed);
+        if(ch == '0')   hand_motor.setSpeed(0);
+        if(ch == '+')   hand_motor.setSpeed(hand_speed/4);
+        if(ch == '-')   hand_motor.setSpeed(-hand_speed/4);
+        if(ch == '*')   hand_motor.setSpeed(hand_speed);
+        if(ch == '/')   hand_motor.setSpeed(-hand_speed);
     }
 
     if (command.startsWith("S")) {
@@ -218,7 +269,7 @@ void processSerialCommand(String command) {
     
     if (command.startsWith("C")) {
         int value = command.substring(1).toInt();
-        if(value == 1)  combo_1();
+        process_combo(value);
     }
 
     if (command.startsWith("A")) {

@@ -6,6 +6,7 @@
 
 #include "BluetoothSerial.h"
 
+
 class Motor {
     private:
         int dir_pin, speed_pin, pre_speed;
