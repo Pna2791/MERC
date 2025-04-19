@@ -46,10 +46,16 @@ DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
 
 #define pump_left       0
 #define coil_left       1
+#define pump_right      3
+#define coil_right      4
+#define fan_left        5
+#define fan_right       6
+#define xilanh          7
 
 int wheel_speed = 0;
 int duration = 0;
 int angle = 0;
+bool servo_stt = true;
 
 
 int current_dir = 0;
@@ -70,6 +76,8 @@ void reset_IMU(){
 }
 
 void servo_run(){
+    if(!servo_stt) return;
+    hand_servo.run();
     Serial.println(wheel_encoder.getCount());
 }
 
@@ -170,23 +178,91 @@ void move_wheel(int dir){
     }
 }
 
-void test_rotate(){
-    motor_left.setSpeed(-255);
-    motor_right.setSpeed(255);
-    delay(duration*100);
-    motor_left.setSpeed(0);
-    motor_right.setSpeed(0);
-}
-
-void take(){
+//suck process
+void take_left(){
     relay_array.set_status(coil_left, 0);
     relay_array.set_status(pump_left, 1);
 }
 
-void drop(){
+void drop_left(){
     relay_array.set_status(coil_left, 1);
     relay_array.set_status(pump_left, 0);
 }
+
+void take_right(){
+    relay_array.set_status(coil_right, 0);
+    relay_array.set_status(pump_right, 1);
+}
+
+void drop_right(){
+    relay_array.set_status(coil_right, 1);
+    relay_array.set_status(pump_right, 0);
+}
+
+void fan_left_(int stt) {
+    relay_array.set_status(fan_left, stt);
+}
+
+void fan_right_(int stt) {
+    relay_array.set_status(fan_right, stt);
+}
+
+void pile(int stt) {
+    relay_array.set_status(xilanh, stt);
+}
+
+
+//hand and body process
+#define body_speed 255
+#define hand_speed 255
+#define height_body 500
+#define height_hand 350
+int current_pos_hand = 0;
+int current_pos_body = 0;
+
+void body_process(char ch) {
+    if(servo_stt) {
+
+        int delta = 0;
+        if(ch == '+')   delta = 5;
+        if(ch == '-')   delta = -5;
+        if(ch == '*')   delta = 50;
+        if(ch == '/')   delta = -50;
+
+        current_pos_body = constrain(current_pos_body+delta, 0, height_body);
+        Serial1.println("T" + String(int(current_pos_body)));
+
+    } else {
+        if(ch == '0')   Serial1.println("B0");
+        if(ch == '+')   Serial1.println("B" + String(int(body_speed/4)));
+        if(ch == '-')   Serial1.println("B-" + String(int(body_speed/4)));
+        if(ch == '*')   Serial1.println("B" + String(body_speed));
+        if(ch == '/')   Serial1.println("B-" + String(body_speed));
+    }
+}
+
+void hand_process(char ch) {
+    if(servo_stt) {
+        int delta = 0;
+        if(ch == '+')   delta = 5;
+        if(ch == '-')   delta = -5;
+        if(ch == '*')   delta = 50;
+        if(ch == '/')   delta = -50;
+
+        current_pos_hand = constrain(current_pos_hand+delta, 0, height_hand);
+        hand_servo.goto_position_mm(current_pos_hand);
+    } else {
+        if(ch == '0')   hand_motor.setSpeed(0);
+        if(ch == '+')   hand_motor.setSpeed(hand_speed);
+        if(ch == '-')   hand_motor.setSpeed(-hand_speed/4);
+        if(ch == '*')   hand_motor.setSpeed(hand_speed);
+        if(ch == '/')   hand_motor.setSpeed(-hand_speed);
+    }
+}
+
+
+//combo process
+
 
 void combo_1(){
     delay(2000);
@@ -203,6 +279,140 @@ void combo_1(){
     motor_right.setSpeed(0);
     SerialBT.discoverClear();
 }
+
+//combo 2 function: take ball automatic
+void take_ball() {
+    if(robot_type == maze_1_robot) {
+        //bật hút
+        fan_left_(1);
+        fan_right_(1);
+        //hạ tay 
+        servo_hand.goto_by_mm(0);
+        //nâng tay
+        servo_hand.goto_by_mm(200);
+
+    } else if (robot_type == maze_2_robot) {
+        //bật hút
+        fan_left_(1);
+        fan_right_(1);
+        //hạ tay 
+        servo_hand.goto_by_mm(0);
+        //nâng tay
+        servo_hand.goto_by_mm(200);
+
+    } else if (robot_type == maze_3_robot) {
+        //bật hút
+        fan_left_(1);
+        fan_right_(1);
+        //hạ tay 
+        servo_hand.goto_by_mm(0);
+        //nâng tay
+        servo_hand.goto_by_mm(200);
+
+    }
+}
+//combo 3 function: drop ball automatic
+void drop_ball() {
+    if(robot_type == maze_1_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm( );
+        //act 2: lui
+        
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm(int );
+        //act 2: lui
+        dual_wheel.set_speed(-100);
+        dual_wheel.set_speed(0);
+        dual_wheel.set_speed(0);
+    } else if (robot_type == maze_3_robot) {
+        //act 1: hạ tay
+        body_servo.goto_by_mm(int );
+        //act 2: lui
+        
+    }
+}
+//combo 4 function: hút quân lương bán tự động 
+void suck_box() {
+    if(robot_type == maze_1_robot) {
+        //act 1: bật hút
+        take_left();
+        
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: bật hút
+        relay_array.set_status(coil_left, 0);
+        relay_array.set_status(pump_left, 1);
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    } else if (robot_type == maze_3_robot) {
+        //act 1: bật hút
+        relay_array.set_status(coil_left, 0);
+        relay_array.set_status(pump_left, 1);
+        //act 2: hạ tay xuống hết + 
+        body_servo.goto_by_mm(int min_body);
+        //act 3: dài tay sau 
+        hand_servo.goto_by_mm(int max_hand);
+        //act 4: thu tay sau
+        hand_servo.goto_by_mm(int );
+        //act 5: nâng body
+        body_servo.goto_by_mm(int );
+        
+    }
+}
+
+//combo 5 function: kẹp cọc + thả cọc 
+void pile_clamp() {
+    if(robot_type == maze_1_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    } else if (robot_type == maze_2_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    } else if (robot_type == maze_3_robot) {
+        //act 1: kẹp xilanh
+        relay_array.set_status(xilanh, 1);
+        //act 2: keep forward
+        dual_wheel.keep_forward(  );
+        //act 3: thả xilanh
+        relay_array.set_status(xilanh, 0);
+        //act 4: tự động lui
+        dual_wheel.keep_forward(- );
+        
+    }
+}
+//combo 6 function: 
+
 
 void update_k_PID(String command){
     float value = command.substring(1).toFloat();
@@ -223,34 +433,30 @@ void process_combo(int value){
     if(value == 23)  auto_forward(1200);
 }
 
-#define body_speed 255
-#define hand_speed 255
 void processSerialCommand(String command) {
     Serial.println(command);
     command.trim();  // Remove any leading/trailing whitespace
 
-    if (command.startsWith("B")) {
+    if(command.startsWith("D")) {
+        if(command.substring(1).toInt()) servo_stt = true;
+        else servo_stt = false;
+    }
+
+    if(command.startsWith("B")) {
         char ch = command.charAt(1);
-        if(ch == '0')   Serial1.println("B0");
-        if(ch == '+')   Serial1.println("B" + String(int(body_speed/4)));
-        if(ch == '-')   Serial1.println("B-" + String(int(body_speed/4)));
-        if(ch == '*')   Serial1.println("B" + String(body_speed));
-        if(ch == '/')   Serial1.println("B-" + String(body_speed));
+        body_process(ch);
     }
 
     if (command.startsWith("H")) {
         char ch = command.charAt(1);
-        if(ch == '0')   hand_motor.setSpeed(0);
-        if(ch == '+')   hand_motor.setSpeed(hand_speed/4);
-        if(ch == '-')   hand_motor.setSpeed(-hand_speed/4);
-        if(ch == '*')   hand_motor.setSpeed(hand_speed);
-        if(ch == '/')   hand_motor.setSpeed(-hand_speed);
+        hand_process(ch);
     }
-
+    
     if (command.startsWith("S")) {
         int value = command.substring(2).toInt();
         wheel_speed = value;
     }
+    
     if (command.startsWith("M")) {
         int value = command.substring(1).toInt();
         move_wheel(value);
@@ -261,10 +467,32 @@ void processSerialCommand(String command) {
         update_k_PID(command.substring(1));
     }
     
-    if (command.startsWith("T")) {
+    if (command.startsWith("TL")) {
         int value = command.substring(1).toInt();
-        if(value == 0)  drop();
-        else            take();
+        if(value == 0)  drop_left();
+        else            take_left();
+    }
+    
+    if (command.startsWith("TR")) {
+        int value = command.substring(1).toInt();
+        if(value == 0)  drop_right();
+        else            take_right();
+    }
+    
+    if (command.startsWith("FL")) {
+        int value = command.substring(1).toInt();
+        if(value == 0)  fan_left_();
+        else            fan_left_();
+    }
+    
+    if (command.startsWith("FR")) {
+        int value = command.substring(1).toInt();
+        if(value == 0)  fan_right_();
+        else            fan_right_();
+    }
+
+    if (command.startsWith("X")) {
+        pile(command.substring(1).toInt());
     }
     
     if (command.startsWith("C")) {
@@ -275,11 +503,18 @@ void processSerialCommand(String command) {
     if (command.startsWith("A")) {
         angle = command.substring(1).toInt()-20;
     }
+    
     if (command.startsWith("D")) {
         duration = command.substring(1).toInt();
     }
+    
     if (command.startsWith("R")) {
-        test_rotate();
+        if(command.charAt(1) == "H") {
+            hand_servo.reset(command.substring(2).toInt());
+        }
+        if(command.charAt(1) == "B") {
+            Serial1.println("R" + command.substring(2));
+        }
     }
     
 
