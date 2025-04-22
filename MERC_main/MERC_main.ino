@@ -1,9 +1,5 @@
 #define SHOW_ENCODER
 
-#define ROBOT_NAME_1    "Maze1"
-// #define ROBOT_NAME_2    "Maze2"
-// #define ROBOT_NAME_3    "Maze3"
-
 
 #include <Encoder.h>
 #include <Motor.h>
@@ -21,13 +17,26 @@ BluetoothSerial SerialBT;
 
 
 
-#ifdef ROBOT_NAME_1             
+#define ROBOT_NAME_1    1
+#define ROBOT_NAME_2    2
+#define ROBOT_NAME_3    3
+
+#define robot_type ROBOT_NAME_1
+
+#if robot_type == ROBOT_NAME_1           
     #define wheel_step_per_mm 1
-#elif defined(ROBOT_NAME_2)     
+    #define ROBOT_NAME          "Maze1"
+#elif robot_type == ROBOT_NAME_2  
     #define wheel_step_per_mm 2.65
-#elif defined(ROBOT_NAME_2)     
+    #define ROBOT_NAME          "Maze2"
+#elif robot_type == ROBOT_NAME_3   
     #define wheel_step_per_mm 2.65
+    #define ROBOT_NAME          "Maze3"
+#else
+  #error "Unknown robot type"
 #endif
+
+
 Motor motor_left = Motor(13, 15);   // dir, speed
 Motor motor_right = Motor(19, 22);
 Encoder wheel_encoder(34, 35);
@@ -55,7 +64,7 @@ DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
 int wheel_speed = 0;
 int duration = 0;
 int angle = 0;
-bool servo_stt = true;
+bool servo_stt = false;
 
 
 int current_dir = 0;
@@ -67,7 +76,8 @@ void setup() {
     Serial2.begin(115200, SERIAL_8N1, 12, 14);
     // Serial2.begin(115200, SERIAL_8N1, 14, 12);
     Serial1.begin(9600, SERIAL_8N1, 26, 25);
-    SerialBT.begin("Maze2"); // Set the Bluetooth device name
+    SerialBT.begin(ROBOT_NAME); // Set the Bluetooth device name
+    Serial.println("Started");
 }
 void reset_IMU(){
     Serial2.println("AT+RST");
@@ -78,7 +88,6 @@ void reset_IMU(){
 void servo_run(){
     if(!servo_stt) return;
     hand_servo.run();
-    Serial.println(wheel_encoder.getCount());
 }
 
 
@@ -253,7 +262,7 @@ void hand_process(char ch) {
         hand_servo.goto_position_mm(current_pos_hand);
     } else {
         if(ch == '0')   hand_motor.setSpeed(0);
-        if(ch == '+')   hand_motor.setSpeed(hand_speed);
+        if(ch == '+')   hand_motor.setSpeed(hand_speed/4);
         if(ch == '-')   hand_motor.setSpeed(-hand_speed/4);
         if(ch == '*')   hand_motor.setSpeed(hand_speed);
         if(ch == '/')   hand_motor.setSpeed(-hand_speed);
@@ -282,135 +291,136 @@ void combo_1(){
 
 //combo 2 function: take ball automatic
 void take_ball() {
-    if(robot_type == maze_1_robot) {
+    if(robot_type == ROBOT_NAME_1) {
         //bật hút
         fan_left_(1);
         fan_right_(1);
         //hạ tay 
-        servo_hand.goto_by_mm(0);
+        hand_servo.goto_position_mm(0);
         //nâng tay
-        servo_hand.goto_by_mm(200);
+        hand_servo.goto_position_mm(200);
 
-    } else if (robot_type == maze_2_robot) {
+    } else if (robot_type == ROBOT_NAME_2) {
         //bật hút
         fan_left_(1);
         fan_right_(1);
         //hạ tay 
-        servo_hand.goto_by_mm(0);
+        hand_servo.goto_position_mm(0);
         //nâng tay
-        servo_hand.goto_by_mm(200);
+        hand_servo.goto_position_mm(200);
 
-    } else if (robot_type == maze_3_robot) {
+    } else if (robot_type == ROBOT_NAME_3) {
         //bật hút
         fan_left_(1);
         fan_right_(1);
         //hạ tay 
-        servo_hand.goto_by_mm(0);
+        hand_servo.goto_position_mm(0);
         //nâng tay
-        servo_hand.goto_by_mm(200);
+        hand_servo.goto_position_mm(200);
 
     }
 }
 //combo 3 function: drop ball automatic
 void drop_ball() {
-    if(robot_type == maze_1_robot) {
-        //act 1: hạ tay
-        body_servo.goto_by_mm( );
-        //act 2: lui
+    // if(robot_type == ROBOT_NAME_1) {
+    //     //act 1: hạ tay
+    //     body_servo.goto_position_mm( );
+    //     //act 2: lui
         
         
-    } else if (robot_type == maze_2_robot) {
-        //act 1: hạ tay
-        body_servo.goto_by_mm(int );
-        //act 2: lui
-        dual_wheel.set_speed(-100);
-        dual_wheel.set_speed(0);
-        dual_wheel.set_speed(0);
-    } else if (robot_type == maze_3_robot) {
-        //act 1: hạ tay
-        body_servo.goto_by_mm(int );
-        //act 2: lui
+    // } else if (robot_type == ROBOT_NAME_2) {
+    //     //act 1: hạ tay
+    //     body_servo.goto_position_mm(int );
+    //     //act 2: lui
+    //     dual_wheel.set_speed(-100);
+    //     dual_wheel.set_speed(0);
+    //     dual_wheel.set_speed(0);
+    // } else if (robot_type == ROBOT_NAME_3) {
+    //     //act 1: hạ tay
+    //     body_servo.goto_position_mm(int );
+    //     //act 2: lui
         
-    }
+    // }
 }
 //combo 4 function: hút quân lương bán tự động 
 void suck_box() {
-    if(robot_type == maze_1_robot) {
-        //act 1: bật hút
-        take_left();
+    // if(robot_type == ROBOT_NAME_1) {
+    //     //act 1: bật hút
+    //     take_left();
         
-        //act 2: hạ tay xuống hết + 
-        body_servo.goto_by_mm(int min_body);
-        //act 3: dài tay sau 
-        hand_servo.goto_by_mm(int max_hand);
-        //act 4: thu tay sau
-        hand_servo.goto_by_mm(int );
-        //act 5: nâng body
-        body_servo.goto_by_mm(int );
+    //     //act 2: hạ tay xuống hết + 
+    //     body_servo.goto_position_mm(int min_body);
+    //     //act 3: dài tay sau 
+    //     hand_servo.goto_position_mm(int max_hand);
+    //     //act 4: thu tay sau
+    //     hand_servo.goto_position_mm(int );
+    //     //act 5: nâng body
+    //     body_servo.goto_position_mm(int );
         
-    } else if (robot_type == maze_2_robot) {
-        //act 1: bật hút
-        relay_array.set_status(coil_left, 0);
-        relay_array.set_status(pump_left, 1);
-        //act 2: hạ tay xuống hết + 
-        body_servo.goto_by_mm(int min_body);
-        //act 3: dài tay sau 
-        hand_servo.goto_by_mm(int max_hand);
-        //act 4: thu tay sau
-        hand_servo.goto_by_mm(int );
-        //act 5: nâng body
-        body_servo.goto_by_mm(int );
+    // } else if (robot_type == ROBOT_NAME_2) {
+    //     //act 1: bật hút
+    //     relay_array.set_status(coil_left, 0);
+    //     relay_array.set_status(pump_left, 1);
+    //     //act 2: hạ tay xuống hết + 
+    //     body_servo.goto_position_mm(int min_body);
+    //     //act 3: dài tay sau 
+    //     hand_servo.goto_position_mm(int max_hand);
+    //     //act 4: thu tay sau
+    //     hand_servo.goto_position_mm(int );
+    //     //act 5: nâng body
+    //     body_servo.goto_position_mm(int );
         
-    } else if (robot_type == maze_3_robot) {
-        //act 1: bật hút
-        relay_array.set_status(coil_left, 0);
-        relay_array.set_status(pump_left, 1);
-        //act 2: hạ tay xuống hết + 
-        body_servo.goto_by_mm(int min_body);
-        //act 3: dài tay sau 
-        hand_servo.goto_by_mm(int max_hand);
-        //act 4: thu tay sau
-        hand_servo.goto_by_mm(int );
-        //act 5: nâng body
-        body_servo.goto_by_mm(int );
+    // } else if (robot_type == ROBOT_NAME_3) {
+    //     //act 1: bật hút
+    //     relay_array.set_status(coil_left, 0);
+    //     relay_array.set_status(pump_left, 1);
+    //     //act 2: hạ tay xuống hết + 
+    //     body_servo.goto_position_mm(int min_body);
+    //     //act 3: dài tay sau 
+    //     hand_servo.goto_position_mm(int max_hand);
+    //     //act 4: thu tay sau
+    //     hand_servo.goto_position_mm(int );
+    //     //act 5: nâng body
+    //     body_servo.goto_position_mm(int );
         
-    }
+    // }
 }
 
 //combo 5 function: kẹp cọc + thả cọc 
 void pile_clamp() {
-    if(robot_type == maze_1_robot) {
-        //act 1: kẹp xilanh
-        relay_array.set_status(xilanh, 1);
-        //act 2: keep forward
-        dual_wheel.keep_forward(  );
-        //act 3: thả xilanh
-        relay_array.set_status(xilanh, 0);
-        //act 4: tự động lui
-        dual_wheel.keep_forward(- );
+    // if(robot_type == ROBOT_NAME_1) {
+    //     //act 1: kẹp xilanh
+    //     relay_array.set_status(xilanh, 1);
+    //     //act 2: keep forward
+    //     dual_wheel.keep_forward(  );
+    //     //act 3: thả xilanh
+    //     relay_array.set_status(xilanh, 0);
+    //     //act 4: tự động lui
+    //     dual_wheel.keep_forward(- );
         
-    } else if (robot_type == maze_2_robot) {
-        //act 1: kẹp xilanh
-        relay_array.set_status(xilanh, 1);
-        //act 2: keep forward
-        dual_wheel.keep_forward(  );
-        //act 3: thả xilanh
-        relay_array.set_status(xilanh, 0);
-        //act 4: tự động lui
-        dual_wheel.keep_forward(- );
+    // } else if (robot_type == ROBOT_NAME_2) {
+    //     //act 1: kẹp xilanh
+    //     relay_array.set_status(xilanh, 1);
+    //     //act 2: keep forward
+    //     dual_wheel.keep_forward(  );
+    //     //act 3: thả xilanh
+    //     relay_array.set_status(xilanh, 0);
+    //     //act 4: tự động lui
+    //     dual_wheel.keep_forward(- );
         
-    } else if (robot_type == maze_3_robot) {
-        //act 1: kẹp xilanh
-        relay_array.set_status(xilanh, 1);
-        //act 2: keep forward
-        dual_wheel.keep_forward(  );
-        //act 3: thả xilanh
-        relay_array.set_status(xilanh, 0);
-        //act 4: tự động lui
-        dual_wheel.keep_forward(- );
+    // } else if (robot_type == ROBOT_NAME_3) {
+    //     //act 1: kẹp xilanh
+    //     relay_array.set_status(xilanh, 1);
+    //     //act 2: keep forward
+    //     dual_wheel.keep_forward(  );
+    //     //act 3: thả xilanh
+    //     relay_array.set_status(xilanh, 0);
+    //     //act 4: tự động lui
+    //     dual_wheel.keep_forward(- );
         
-    }
+    // }
 }
+
 //combo 6 function: 
 
 
@@ -481,14 +491,12 @@ void processSerialCommand(String command) {
     
     if (command.startsWith("FL")) {
         int value = command.substring(1).toInt();
-        if(value == 0)  fan_left_();
-        else            fan_left_();
+        fan_left_(value);
     }
     
     if (command.startsWith("FR")) {
         int value = command.substring(1).toInt();
-        if(value == 0)  fan_right_();
-        else            fan_right_();
+        fan_right_(value);
     }
 
     if (command.startsWith("X")) {
@@ -504,15 +512,15 @@ void processSerialCommand(String command) {
         angle = command.substring(1).toInt()-20;
     }
     
-    if (command.startsWith("D")) {
-        duration = command.substring(1).toInt();
-    }
+    // if (command.startsWith("D")) {
+    //     duration = command.substring(1).toInt();
+    // }
     
     if (command.startsWith("R")) {
-        if(command.charAt(1) == "H") {
+        if(command.charAt(1) == 'H') {
             hand_servo.reset(command.substring(2).toInt());
         }
-        if(command.charAt(1) == "B") {
+        if(command.charAt(1) == 'B') {
             Serial1.println("R" + command.substring(2));
         }
     }
