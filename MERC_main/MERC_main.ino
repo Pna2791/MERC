@@ -505,7 +505,7 @@ void processSerialCommand(String command) {
         }  
         else {
             take_right();
-            take_left()
+            take_left();
         }
     }
     
@@ -526,14 +526,14 @@ void processSerialCommand(String command) {
     }
 
     if (command.startsWith("XP")) {
-        int value = command.substring(2).toInt() 
+        int value = command.substring(2).toInt();
         pile(value);
     }
         
     //set yard
     if(command.startsWith("Y")) {
-        if(command.charAt(1) == L) yard = left_mode;
-        if(command.charAt(1) == R) yard = right_mode;
+        if(command.charAt(1) == 'L') yard = left_mode;
+        if(command.charAt(1) == 'R') yard = right_mode;
     }
 
     if (command.startsWith("C")) {
