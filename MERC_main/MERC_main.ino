@@ -487,13 +487,13 @@ void processSerialCommand(String command) {
 
     //Relay 
     if (command.startsWith("TL")) {
-        int value = command.substring(1).toInt();
+        int value = command.substring(2).toInt();
         if(value == 0)  drop_left();
         else            take_left();
     }
     
     if (command.startsWith("TR")) {
-        int value = command.substring(1).toInt();
+        int value = command.substring(2).toInt();
         if(value == 0)  drop_right();
         else            take_right();
     }
@@ -505,7 +505,7 @@ void processSerialCommand(String command) {
         }  
         else {
             take_right();
-            take_left();
+            take_left()
         }
     }
     
