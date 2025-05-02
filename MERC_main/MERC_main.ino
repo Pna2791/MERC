@@ -42,7 +42,8 @@ Motor motor_right = Motor(19, 22);
 Encoder wheel_encoder(34, 35);
 
 
-PIDController forward_pid   = PIDController(20, 2, 1, 127);
+// PIDController forward_pid   = PIDController(20, 2, 1, 127);
+PIDController forward_pid   = PIDController(5, 1, 0.1, 127);
 Chassis dual_wheel = Chassis(motor_left, motor_right, forward_pid);
 Relay_Array relay_array = Relay_Array(5, 18, 23);
 
@@ -52,14 +53,14 @@ PIDController   hand_pid(10, 0, 0.3, 255, 5);  // P, I, D, max speed, skip error
 DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
 
 
-
+//index: 0 1 2 6 7 5 4 3
 #define pump_left       0
-#define coil_left       1
-#define pump_right      3
-#define coil_right      4
-#define fan_left        5
+// #define coil_left       1
+#define fan_left        1
+#define xilanh          2
 #define fan_right       6
-#define xilanh          7
+#define pump_right      7
+// #define coil_right      4
 
 
 //define 
@@ -78,6 +79,8 @@ int current_dir = 0;
 void setup() {
     hand_encoder.begin();
     wheel_encoder.begin();
+    relay_array.set_status(xilanh, 0);
+    
 
     Serial.begin(115200);
     Serial2.begin(115200, SERIAL_8N1, 12, 14);
@@ -196,23 +199,23 @@ void move_wheel(int dir){
 
 //suck process
 void take_left(){
-    relay_array.set_status(coil_left, 0);
     relay_array.set_status(pump_left, 1);
+    // relay_array.set_status(coil_left, 0);
 }
 
 void drop_left(){
-    relay_array.set_status(coil_left, 1);
     relay_array.set_status(pump_left, 0);
+    // relay_array.set_status(coil_left, 1);
 }
 
 void take_right(){
-    relay_array.set_status(coil_right, 0);
     relay_array.set_status(pump_right, 1);
+    // relay_array.set_status(coil_right, 0);
 }
 
 void drop_right(){
-    relay_array.set_status(coil_right, 1);
     relay_array.set_status(pump_right, 0);
+    // relay_array.set_status(coil_right, 1);
 }
 
 void fan_left_(int stt) {
