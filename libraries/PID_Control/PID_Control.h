@@ -2,8 +2,8 @@
 #define PID_CONTROL_H
 
 
-#define INTERVAL 40
-#define FREQ    25
+#define INTERVAL    8.33
+#define FREQ        120
 
 
 class PIController {

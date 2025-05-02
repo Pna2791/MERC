@@ -1,7 +1,7 @@
 #define SHOW_ENCODER
 
 
-#include <Encoder.h>
+#include <EncoderTimer.h>
 #include <Motor.h>
 #include <DC_Servo.h>
 #include <RelayArray.h>
@@ -37,16 +37,17 @@ BluetoothSerial SerialBT;
 #endif
 
 
-Motor motor_left = Motor(13, 15);   // dir, speed
-Motor motor_right = Motor(19, 22);
-Encoder wheel_encoder(34, 35);
+Motor motor_left = Motor(13, 15, 1);   // dir, speed, direction(CV or CCV)
+Motor motor_right = Motor(19, 22, -1);
+// Encoder wheel_encoder(34, 35);
+EncoderTimer wheel_encoder(34, 35, 0, 300);
 
 
-PIDController forward_pid   = PIDController(20, 2, 1, 127);
+PIDController forward_pid   = PIDController(10, 2, 1, 192); // 315rpm speed 100-150
 Chassis dual_wheel = Chassis(motor_left, motor_right, forward_pid);
 Relay_Array relay_array = Relay_Array(5, 18, 23);
 
-Encoder hand_encoder(32, 33);
+EncoderTimer hand_encoder(32, 33, 0, 300);
 Motor   hand_motor(17, 16);
 PIDController   hand_pid(10, 0, 0.3, 255, 5);  // P, I, D, max speed, skip error
 DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
@@ -75,9 +76,10 @@ void setup() {
     Serial.begin(115200);
     Serial2.begin(115200, SERIAL_8N1, 12, 14);
     // Serial2.begin(115200, SERIAL_8N1, 14, 12);
-    Serial1.begin(9600, SERIAL_8N1, 26, 25);
+    Serial1.begin(57600, SERIAL_8N1, 26, 25);
     SerialBT.begin(ROBOT_NAME); // Set the Bluetooth device name
     Serial.println("Started");
+    relay_array.reset();
 }
 void reset_IMU(){
     Serial2.println("AT+RST");
@@ -86,7 +88,9 @@ void reset_IMU(){
 }
 
 void servo_run(){
-    if(!servo_stt) return;
+    if(!servo_stt){
+        return;
+    }
     hand_servo.run();
 }
 
@@ -105,28 +109,42 @@ void auto_forward(int length=1200, int time_out=3000){
     dual_wheel.stop();
 }
 
+String command_0 = "";
+String command_1 = "";
+String command_BT = "";
 void loop() {
     // Check for serial commands
     if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        processSerialCommand(command);
+        char ch = Serial.read();
+        if(ch == '\n'){
+            processSerialCommand(command_0);
+            command_0 = "";
+        }else   command_0 += ch;
     }
 
-    // Check for serial commands
-    if (Serial1.available()) {
-        String command = Serial1.readStringUntil('\n');
-        processSerialCommand(command);
-    }
+    // // Check for serial commands
+    // if (Serial1.available()) {
+
+    //     char ch = Serial1.read();
+    //     if(ch == '\n'){
+    //         processSerialCommand(command_1);
+    //         command_1 = "";
+    //     }else   command_1 += ch;
+    // }
 
     // Check for serial commands
     if (SerialBT.available()) {
-        String command = SerialBT.readStringUntil('\n');
-        processSerialCommand(command);
+        char ch = SerialBT.read();
+        if(ch == '\n'){
+            processSerialCommand(command_BT);
+            command_BT = "";
+        }else   command_BT += ch;
     }
 
     static long next_update = millis();
     int received_dir = get_direction(Serial2);
     if(received_dir != 0xFFF){
+        Serial.println(received_dir);
         current_dir = received_dir;
         if(dual_wheel.code == 1)
             dual_wheel.keep_forward(received_dir, wheel_speed, SerialBT);
@@ -143,6 +161,11 @@ void loop() {
         }
     }
 
+        // Serial.print(digitalRead(34));
+        // Serial.print('\t');
+        // Serial.print(digitalRead(34));
+        // Serial.print('\t');
+        // Serial.println(wheel_encoder.getCount());
 }
 
 void move_wheel(int dir){
@@ -154,7 +177,7 @@ void move_wheel(int dir){
     if(dir == 1){
         forward_pid.reset();
         dual_wheel.set_target_dir(current_dir);
-        dual_wheel.set_speed(wheel_speed, wheel_speed, 15);
+        dual_wheel.set_speed(wheel_speed, wheel_speed, 60);
         return;
     }
     if(dir == 2){
@@ -225,7 +248,7 @@ void pile(int stt) {
 #define body_speed 255
 #define hand_speed 255
 #define height_body 500
-#define height_hand 350
+#define height_hand 250
 int current_pos_hand = 0;
 int current_pos_body = 0;
 

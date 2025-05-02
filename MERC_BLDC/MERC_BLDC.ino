@@ -1,4 +1,5 @@
 
+#include <EncoderTimer.h>
 #include <Encoder.h>
 #include <Motor.h>
 #include <DC_Servo.h>
@@ -14,7 +15,7 @@ DC_servo body_servo(body_motor, body_encoder, body_pid, 50);    // steps/mm
 bool servo_stt = true;
 void setup() {
     Serial.begin(115200);
-    Serial2.begin(9600, SERIAL_8N1, 12, 14);  // Serial2 for UART input
+    Serial1.begin(57600, SERIAL_8N1, 25, 26);  // Serial1 for UART input
     body_encoder.begin();
 }
 
@@ -33,8 +34,8 @@ void loop() {
         processSerialCommand(command);
     }
     // Check for serial commands
-    if (Serial2.available()) {
-        String command = Serial2.readStringUntil('\n');
+    if (Serial1.available()) {
+        String command = Serial1.readStringUntil('\n');
         processSerialCommand(command);
     }
 }
