@@ -42,7 +42,6 @@ Motor motor_right = Motor(19, 22, -1);
 // Encoder wheel_encoder(34, 35);
 EncoderTimer wheel_encoder(34, 35, 0, 300);
 
-
 PIDController forward_pid   = PIDController(10, 2, 1, 192); // 315rpm speed 100-150
 PIDController rotate_pid    = PIDController(0.5, 0.0, 0.035, 192); // 315rpm speed 100-150
 Chassis dual_wheel          = Chassis(motor_left, motor_right, forward_pid);
@@ -54,14 +53,20 @@ PIDController   hand_pid(10, 0, 0.3, 255, 5);  // P, I, D, max speed, skip error
 DC_servo hand_servo(hand_motor, hand_encoder, hand_pid, 5);
 
 
-
+//index: 0 1 2 6 7 5 4 3
 #define pump_left       0
-#define coil_left       1
-#define pump_right      3
-#define coil_right      4
-#define fan_left        5
+// #define coil_left       1
+#define fan_left        1
+#define xilanh          2
 #define fan_right       6
-#define xilanh          7
+#define pump_right      7
+// #define coil_right      4
+
+
+//define 
+#define left_mode       0
+#define right_mode      1    
+int yard = right_mode;
 
 int wheel_speed = 0;
 int duration = 0;
@@ -69,10 +74,13 @@ int angle = 0;
 bool servo_stt = false;
 
 
+
 int current_dir = 0;
 void setup() {
     hand_encoder.begin();
     wheel_encoder.begin();
+    relay_array.set_status(xilanh, 0);
+    
 
     Serial.begin(115200);
     Serial2.begin(115200, SERIAL_8N1, 12, 14);
@@ -241,23 +249,23 @@ void move_wheel(int dir){
 
 //suck process
 void take_left(){
-    relay_array.set_status(coil_left, 0);
     relay_array.set_status(pump_left, 1);
+    // relay_array.set_status(coil_left, 0);
 }
 
 void drop_left(){
-    relay_array.set_status(coil_left, 1);
     relay_array.set_status(pump_left, 0);
+    // relay_array.set_status(coil_left, 1);
 }
 
 void take_right(){
-    relay_array.set_status(coil_right, 0);
     relay_array.set_status(pump_right, 1);
+    // relay_array.set_status(coil_right, 0);
 }
 
 void drop_right(){
-    relay_array.set_status(coil_right, 1);
     relay_array.set_status(pump_right, 0);
+    // relay_array.set_status(coil_right, 1);
 }
 
 void fan_left_(int stt) {
@@ -271,7 +279,7 @@ void fan_right_(int stt) {
 void pile(int stt) {
     relay_array.set_status(xilanh, stt);
 }
-
+// double suck 
 
 //hand and body process
 #define body_speed 255
@@ -509,7 +517,7 @@ void processSerialCommand(String command) {
     // Serial.println(command);
     command.trim();  // Remove any leading/trailing whitespace
 
-    if(command.startsWith("D")) {
+    if(command.startsWith("E")) {
         if(command.substring(1).toInt()) servo_stt = true;
         else servo_stt = false;
     }
@@ -528,7 +536,7 @@ void processSerialCommand(String command) {
         int value = command.substring(2).toInt();
         wheel_speed = value;
     }
-    
+
     if (command.startsWith("M")) {
         int value = command.substring(1).toInt();
         move_wheel(value);
@@ -539,32 +547,58 @@ void processSerialCommand(String command) {
         update_k_PID(command.substring(1));
     }
     
+
+    //Relay 
     if (command.startsWith("TL")) {
-        int value = command.substring(1).toInt();
+        int value = command.substring(2).toInt();
         if(value == 0)  drop_left();
         else            take_left();
     }
     
     if (command.startsWith("TR")) {
-        int value = command.substring(1).toInt();
+        int value = command.substring(2).toInt();
         if(value == 0)  drop_right();
         else            take_right();
     }
+    if (command.startsWith("TD")) {
+        int value = command.substring(2).toInt();
+        if(value == 0) {
+            drop_right();
+            drop_left();
+        }  
+        else {
+            take_right();
+            take_left();
+        }
+    }
     
-    if (command.startsWith("FL")) {
-        int value = command.substring(1).toInt();
+    if (command.startsWith("XL")) {
+        int value = command.substring(2).toInt();
         fan_left_(value);
     }
     
-    if (command.startsWith("FR")) {
-        int value = command.substring(1).toInt();
+    if (command.startsWith("XR")) {
+        int value = command.substring(2).toInt();
         fan_right_(value);
     }
-
-    if (command.startsWith("X")) {
-        pile(command.substring(1).toInt());
-    }
     
+    if (command.startsWith("XD")) {
+        int value = command.substring(2).toInt();
+        fan_right_(value);
+        fan_left_(value);
+    }
+
+    if (command.startsWith("XP")) {
+        int value = command.substring(2).toInt();
+        pile(value);
+    }
+        
+    //set yard
+    if(command.startsWith("Y")) {
+        if(command.charAt(1) == 'L') yard = left_mode;
+        if(command.charAt(1) == 'R') yard = right_mode;
+    }
+
     if (command.startsWith("C")) {
         int value = command.substring(1).toInt();
         process_combo(value);
@@ -591,5 +625,6 @@ void processSerialCommand(String command) {
         int angle = command.substring(1).toInt();
         rotate_CCW(current_dir + angle*10);
     }
+
 
 }
