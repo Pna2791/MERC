@@ -151,10 +151,7 @@ void turn_forward(int value=25, int n_step=1){
             dual_wheel.move_forward(forward_value);
         }
     }
-
-    dual_wheel.move_speed(-255);
-    delay(10);
-    dual_wheel.move_speed(0);
+    dual_wheel.stop();
 }
 
 

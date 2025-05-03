@@ -3,7 +3,7 @@
 
 #define encoder_A       2  // Should be interrupt-capable pin
 #define plush_per_cm    2
-#define ENCODER_OFFSET  2
+#define ENCODER_OFFSET  3
 
 volatile long encoderCount = 0;
 
